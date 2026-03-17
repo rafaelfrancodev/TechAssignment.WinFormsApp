@@ -13,6 +13,9 @@ public interface IDogRepository
     /// <summary>Gets all dogs belonging to a specific client.</summary>
     Task<IReadOnlyList<Dog>> GetByClientIdAsync(int clientId);
 
+    /// <summary>Searches dogs by name or breed within a specific client.</summary>
+    Task<IReadOnlyList<Dog>> SearchByClientIdAsync(int clientId, string term);
+
     /// <summary>Adds a new dog.</summary>
     Task AddAsync(Dog dog);
 
