@@ -35,6 +35,16 @@ public class DogService : IDogService
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<DogDto>> SearchByClientAsync(int clientId, string term)
+    {
+        var client = await _clientRepo.GetByIdAsync(clientId)
+            ?? throw new ApplicationException($"Client with ID {clientId} not found.");
+
+        var dogs = await _dogRepo.SearchByClientIdAsync(clientId, term);
+        return dogs.Select(d => DogMapper.ToDto(d, client.Name)).ToList();
+    }
+
+    /// <inheritdoc />
     public async Task<int> CreateAsync(int clientId, string name, string breed, int age)
     {
         var client = await _clientRepo.GetByIdAsync(clientId)
