@@ -5,13 +5,14 @@ using Domain.Interfaces;
 using Infraestructure.Persistence;
 using Infraestructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using TechAssignment.WinFormsApp.Presenters;
 using TechAssignment.WinFormsApp.Views;
 
 namespace TechAssignment.WinFormsApp;
 
 /// <summary>
-/// Application entry point and composition root.
+/// Application entry point and composition root using Microsoft DI container.
 /// </summary>
 internal static class Program
 {
@@ -36,39 +37,46 @@ internal static class Program
         var connStr = ConfigurationManager.ConnectionStrings["DogWalking"]?.ConnectionString
             ?? "Server=(localdb)\\mssqllocaldb;Database=DogWalkingDb;Trusted_Connection=True;";
 
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlServer(connStr)
-            .Options;
+        // --- DI Container ---
+        var services = new ServiceCollection();
+
+        // DbContext — registered as factory so each scope gets its own instance
+        services.AddDbContextFactory<AppDbContext>(opts => opts.UseSqlServer(connStr));
+
+        // Repositories — scoped (one per operation)
+        services.AddScoped<IClientRepository, ClientRepository>();
+        services.AddScoped<IDogRepository, DogRepository>();
+        services.AddScoped<IWalkEventRepository, WalkEventRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+
+        // Services — scoped
+        services.AddScoped<IClientService, ClientService>();
+        services.AddScoped<IDogService, DogService>();
+        services.AddScoped<IWalkEventService, WalkEventService>();
+        services.AddScoped<IAuthService, AuthService>();
+
+        // Forms — transient (new instance each time)
+        services.AddTransient<LoginForm>();
+        services.AddTransient<MainForm>();
+
+        var serviceProvider = services.BuildServiceProvider();
 
         // Apply pending migrations on startup
-        using (var ctx = new AppDbContext(options))
+        using (var scope = serviceProvider.CreateScope())
         {
+            var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             ctx.Database.Migrate();
         }
 
-        // DbContext factory — each repository operation gets its own context
-        var factory = new AppDbContextFactory(options);
-
-        // Repositories
-        IClientRepository clientRepo = new ClientRepository(factory);
-        IDogRepository dogRepo = new DogRepository(factory);
-        IWalkEventRepository walkRepo = new WalkEventRepository(factory);
-        IUserRepository userRepo = new UserRepository(factory);
-
-        // Services
-        IClientService clientService = new ClientService(clientRepo);
-        IDogService dogService = new DogService(dogRepo, clientRepo);
-        IWalkEventService walkService = new WalkEventService(walkRepo, dogRepo);
-        IAuthService authService = new AuthService(userRepo);
-
         // Login gate
-        var loginForm = new LoginForm();
-        var loginPresenter = new LoginPresenter(loginForm, authService);
+        var loginForm = serviceProvider.GetRequiredService<LoginForm>();
+        var authService = serviceProvider.GetRequiredService<IAuthService>();
+        _ = new LoginPresenter(loginForm, authService);
         var loginResult = loginForm.ShowDialog();
         if (loginResult != DialogResult.OK) return;
 
         // Main window
-        var mainForm = new MainForm(clientService, dogService, walkService);
+        var mainForm = serviceProvider.GetRequiredService<MainForm>();
         System.Windows.Forms.Application.Run(mainForm);
     }
 }
