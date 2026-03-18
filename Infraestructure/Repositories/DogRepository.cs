@@ -70,7 +70,9 @@ public class DogRepository : IDogRepository
     public async Task DeleteAsync(int id)
     {
         await using var ctx = await _factory.CreateDbContextAsync();
-        var dog = await ctx.Dogs.FindAsync(id);
+        var dog = await ctx.Dogs
+            .Include(d => d.WalkHistory)
+            .FirstOrDefaultAsync(d => d.Id == id);
         if (dog is not null)
         {
             ctx.Dogs.Remove(dog);

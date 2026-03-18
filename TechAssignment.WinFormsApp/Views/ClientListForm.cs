@@ -97,7 +97,11 @@ public class ClientListForm : UserControl, IClientListView
         var btnClear = new ToolStripButton("Clear") { DisplayStyle = ToolStripItemDisplayStyle.Text };
         btnClear.Click += (s, e) => { txtSearch.Text = ""; SearchRequested?.Invoke(this, e); };
 
+        var btnDogs = new ToolStripButton("\uD83D\uDC36 Dogs") { DisplayStyle = ToolStripItemDisplayStyle.Text };
+        btnDogs.Click += (s, e) => ManageDogsRequested?.Invoke(this, e);
+
         toolStrip.Items.AddRange([btnAdd, btnEdit, btnDelete, new ToolStripSeparator(),
+            btnDogs, new ToolStripSeparator(),
             txtSearch, btnSearch, btnClear]);
 
         // DataGridView - complex binding

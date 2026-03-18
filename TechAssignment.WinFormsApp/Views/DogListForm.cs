@@ -5,9 +5,9 @@ using TechAssignment.WinFormsApp.Views.Contracts;
 namespace TechAssignment.WinFormsApp.Views;
 
 /// <summary>
-/// Dog list form with DataGridView (complex binding).
+/// Dog list form with DataGridView (complex binding). Opens as a dialog for a specific client.
 /// </summary>
-public class DogListForm : UserControl, IDogListView
+public class DogListForm : Form, IDogListView
 {
     private readonly DataGridView dgvDogs = new();
     private readonly ToolStripTextBox txtSearch = new();
@@ -48,22 +48,12 @@ public class DogListForm : UserControl, IDogListView
     /// <summary>
     /// Initializes the dog list form with all controls.
     /// </summary>
-    public DogListForm()
+    public DogListForm(string clientName)
     {
-        Dock = DockStyle.Fill;
-
-        // Header label
-        var lblHeader = new Label
-        {
-            Text = "Dogs",
-            Dock = DockStyle.Top,
-            Font = new Font(Font.FontFamily, 12, FontStyle.Bold),
-            Height = 30,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(5, 0, 0, 0),
-            BackColor = Color.FromArgb(45, 45, 48),
-            ForeColor = Color.White
-        };
+        Text = $"Dogs - {clientName}";
+        Size = new Size(800, 500);
+        StartPosition = FormStartPosition.CenterParent;
+        MinimumSize = new Size(600, 400);
 
         // ToolStrip
         toolStrip.GripStyle = ToolStripGripStyle.Hidden;
@@ -135,8 +125,9 @@ public class DogListForm : UserControl, IDogListView
         // Layout order: bottom-up for Dock
         Controls.Add(dgvDogs);
         Controls.Add(toolStrip);
-        Controls.Add(lblHeader);
         Controls.Add(statusStrip);
+
+        Shown += (s, e) => LoadRequested?.Invoke(this, EventArgs.Empty);
     }
 
     /// <inheritdoc />
